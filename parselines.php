@@ -80,14 +80,16 @@ $moves=explode("\r\n",$srcarray[1]);
 
 $c=count($moves);$i=0;
     for (++$i; $i<$c; $i++) {
+
         $pos=strpos($moves[$i],'*');
         if ($pos===false) {
             $matches =array(); //otherwise,$matches will simply retain previous value
             $nMatches=array();
             $pMatches=array();
-            $dMatches=array();
-            $kMatches=array();
             $xMatches=array();
+            $qMatches=array();
+
+
             mb_ereg($sniffer,$moves[$i],$matches);
             mb_ereg($moveNumber,$moves[$i],$nMatches);
          foreach($convert as $replacement=>$pattern){
@@ -102,34 +104,46 @@ $c=count($moves);$i=0;
                 if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace("\+","",$moves[$i]);
                     $moves[$i]=mb_ereg_replace("\-","+",$moves[$i]);
+                    unset($pMatches);
                 }
                 mb_ereg("d",$moves[$i],$pMatches);//check for drop move
                 if (isset($pMatches[0])){
 
                    $moves[$i]=mb_ereg_replace("d","",$moves[$i]);
                    $moves[$i]=mb_ereg_replace("\-","d",$moves[$i]);
+                    unset($pMatches);
                 }
-                mb_ereg('\(\d\d\)\s*',$moves[$i],$kMatches);
-                if (isset($kMatches[0])){
+                mb_ereg('\(\d\d\)\s*',$moves[$i],$pMatches);
+                if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace(".\(","",$moves[$i]);
                     $moves[$i]=mb_ereg_replace("\)\s*","",$moves[$i]);
+                    unset($pMatches);
+
                 }
-                mb_ereg('xx',$moves[$i],$dMatches);
-                if (isset($dMatches[0])){
+                mb_ereg('xx',$moves[$i],$pMatches);
+                if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace("xx",$prevMove,$moves[$i]);
+
                 }
-                $moves[$i]=mb_ereg_replace("\s*$","",$moves[$i]);
+               $moves[$i]=mb_ereg_replace("\s*$","",$moves[$i]);
                 $prevMove=substr($moves[$i],2,2);
 
-                mb_ereg('x',$moves[$i],$xMatches);
+                mb_ereg('x',$moves[$i],$pMatches);
                 if(isset($xMatches[0])){
                     $moves[$i]="x";
+                    unset($pMatches);
                 }
                 $moves[$i].=("=".trim($nMatches[0]));
             }
             if (isset($matches[0])) {$moves[$i].=":"; $moves[$i].=$matches[0];}
 
         }
+        $moves[$i]='"'.$moves[$i].'"';
 
     }
-var_dump($moves);
+$movestring=implode(",\n", $moves);
+$pattern='\"*\,\n';
+$replace='';
+mb_ereg_replace($pattern,$replace,$movestring);
+mb_ereg_replace("\",\r\n\"\*","\*",$movestring);
+var_dump($movestring);
