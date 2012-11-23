@@ -11,7 +11,7 @@
 mb_internal_encoding("UTF-8");
 mb_regex_encoding( "UTF-8" );
 $src="";
-include_once "data2.inc.php";
+include_once "inc/data2.inc.php";
 
 $convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
     "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',

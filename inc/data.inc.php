@@ -5,7 +5,7 @@
  * Date: 11/19/12
  * Time: 9:52 PM
  * To change this template use File | Settings | File Templates.
- * Data $src is here
+ * Purpose: sample data $src to experiment with PHP coding
  */
 
 $src=<<<DOC

@@ -23,28 +23,113 @@
  * 1. find comment line and divert to different handling
  * 2. find the start of movement record
  */
-include_once "findline.php";
-include_once "data.inc.php"; // string variable $src is defined in separate file
+mb_internal_encoding("UTF-8");
+mb_regex_encoding( "UTF-8" );
+$src="";
+$delim="手数----指手---------消費時間--";
+$player1="先手：";
+$player2="後手：";
+$startDate="開始日時：";
+$finishDate="終了日時：";
+$version="KIF";
+$hc="手合割：";
+
+include_once "inc/findline.php";
+include_once "inc/data.inc.php"; // string variable $src is defined in separate file
+    $moveNumber="^\s*\d*\s";
+    $convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
+    "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',
+    'n'=>'桂','S'=>'成銀','s'=>'銀','r'=>'飛',"R"=>"[竜龍]","b"=>"角","B"=>"馬","k"=>"玉","g"=>"金",
+    "xx"=>"同　","d"=>"打","Br"=>"\+","+"=>"成","x"=>"投了",
+    "-"=>"$moveNumber",
+    ""=>"\(\s[\d/:]*\)"
+);
+$sniffer="[１２３４５６７８９同].*[歩と香桂銀金王玉飛竜龍角馬成打直引行]";
+
+
+
+/*
+ * Because of order of character conversion is per the order of this
+ * array, it is important such as "+" value
+ * comes before "+" key and "成香" $value comes before "香" $value etc.,
+ * */
+
 $srcarray=array();
-$srcarray=explode("\r\n",$src); //split up by lines
-$c=count($srcarray); //$c is number of lines.
+$srcarray=explode($delim,$src);
+/*$srcarray[0] contains header info.  $srcarray[1] contains kifu info */
+function getHeaderInfo($key,$src){
+    $i=findline($key,$src);
+    if ($i)
+    { $split=mb_split($key,$src[$i]);
+    return $split[1];}
+    else return false;
+}
+$headerarray=explode("\r\n",$srcarray[0]);
+//split up by lines
+$kifHeader['player1']=getHeaderInfo($player1,$headerarray);
+$kifHeader['player2']=getHeaderInfo($player2,$headerarray);
+$kifHeader['Kif format']=getHeaderInfo($version,$headerarray);
+$kifHeader['Start Date']=getHeaderInfo($startDate,$headerarray);
+$kifHeader['Finish Date']=getHeaderInfo($finishDate,$headerarray);
+$kifHeader['Handycap']=getHeaderInfo($hc,$headerarray);
 
-$i=findline("先手",$srcarray);
-$split=mb_split("：",$srcarray[$i]);
-$sentePlayer=$split[1];
-$i=findline("後手",$srcarray);
-$split=mb_split("：",$srcarray[$i]);
-$GotePlayer=$split[1];
 
 
-    $i=findline("手数----指手",$srcarray ); //find the start of movement records.
+$moves=explode("\r\n",$srcarray[1]);
+// var_dump($moves);
 
+$c=count($moves);$i=0;
     for (++$i; $i<$c; $i++) {
-        $pos=strpos($srcarray[$i],'*');
-        if ($pos===false){
-        echo $i." :".$srcarray[$i]."\n";}
-        else echo $i."pos=$pos ***:".$srcarray[$i]."\n";
-    }
-echo $sentePlayer."\n";
-echo $GotePlayer."\n";
+        $pos=strpos($moves[$i],'*');
+        if ($pos===false) {
+            $matches =array(); //otherwise,$matches will simply retain previous value
+            $nMatches=array();
+            $pMatches=array();
+            $dMatches=array();
+            $kMatches=array();
+            $xMatches=array();
+            mb_ereg($sniffer,$moves[$i],$matches);
+            mb_ereg($moveNumber,$moves[$i],$nMatches);
+         foreach($convert as $replacement=>$pattern){
+             $moves[$i]=mb_ereg_replace($pattern,$replacement,$moves[$i]);
+            }
 
+            if (isset($nMatches[0])){
+
+                if (trim($nMatches[0]) & 1 )$side="s"; else $side="g";
+                $moves[$i]=$side.$moves[$i];
+                mb_ereg("\+",$moves[$i],$pMatches);//check for promotion move
+                if (isset($pMatches[0])){
+                    $moves[$i]=mb_ereg_replace("\+","",$moves[$i]);
+                    $moves[$i]=mb_ereg_replace("\-","+",$moves[$i]);
+                }
+                mb_ereg("d",$moves[$i],$pMatches);//check for drop move
+                if (isset($pMatches[0])){
+
+                   $moves[$i]=mb_ereg_replace("d","",$moves[$i]);
+                   $moves[$i]=mb_ereg_replace("\-","d",$moves[$i]);
+                }
+                mb_ereg('\(\d\d\)\s*',$moves[$i],$kMatches);
+                if (isset($kMatches[0])){
+                    $moves[$i]=mb_ereg_replace(".\(","",$moves[$i]);
+                    $moves[$i]=mb_ereg_replace("\)\s*","",$moves[$i]);
+                }
+                mb_ereg('xx',$moves[$i],$dMatches);
+                if (isset($dMatches[0])){
+                    $moves[$i]=mb_ereg_replace("xx",$prevMove,$moves[$i]);
+                }
+                $moves[$i]=mb_ereg_replace("\s*$","",$moves[$i]);
+                $prevMove=substr($moves[$i],2,2);
+
+                mb_ereg('x',$moves[$i],$xMatches);
+                if(isset($xMatches[0])){
+                    $moves[$i]="x";
+                }
+                $moves[$i].=("=".trim($nMatches[0]));
+            }
+            if (isset($matches[0])) {$moves[$i].=":"; $moves[$i].=$matches[0];}
+
+        }
+
+    }
+var_dump($moves);

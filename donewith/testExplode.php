@@ -16,8 +16,8 @@ include_once "data2.inc.php"; /*
   * reassign $src
   */
 
-$replacements=[];
-$patterns=[];
+$replacements=array();
+$patterns=array();
 $replacements[0]="1";$patterns[0]="[一１]";
 $replacements[1]="2";$patterns[1]="[二２]";
 $replacements[2]="3";$patterns[2]="[三３]";
