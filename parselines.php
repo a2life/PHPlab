@@ -40,7 +40,7 @@ include_once "inc/data.inc.php"; // string variable $src is defined in separate 
     $convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
     "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',
     'n'=>'桂','S'=>'成銀','s'=>'銀','r'=>'飛',"R"=>"[竜龍]","b"=>"角","B"=>"馬","k"=>"玉","g"=>"金",
-    "xx"=>"同　","d"=>"打","Br"=>"\+","+"=>"成","x"=>"投了",
+    "xx"=>"同　","d"=>"打","J"=>"\+","+"=>"成","x"=>"投了","C"=>"変化：",
     "-"=>"$moveNumber",
     ""=>"\(\s[\d/:]*\)"
 );
@@ -82,12 +82,11 @@ $c=count($moves);$i=0;
     for (++$i; $i<$c; $i++) {
 
         $pos=strpos($moves[$i],'*');
-        if ($pos===false) {
-            $matches =array(); //otherwise,$matches will simply retain previous value
+        if ($pos===false) {    //The line is not a comment
+            $matches =array();
             $nMatches=array();
             $pMatches=array();
-            $xMatches=array();
-            $qMatches=array();
+
 
 
             mb_ereg($sniffer,$moves[$i],$matches);
@@ -113,7 +112,7 @@ $c=count($moves);$i=0;
                    $moves[$i]=mb_ereg_replace("\-","d",$moves[$i]);
                     unset($pMatches);
                 }
-                mb_ereg('\(\d\d\)\s*',$moves[$i],$pMatches);
+                mb_ereg('\(\d\d\)\s*',$moves[$i],$pMatches);// detect (nn)=previous position info
                 if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace(".\(","",$moves[$i]);
                     $moves[$i]=mb_ereg_replace("\)\s*","",$moves[$i]);
@@ -123,27 +122,40 @@ $c=count($moves);$i=0;
                 mb_ereg('xx',$moves[$i],$pMatches);
                 if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace("xx",$prevMove,$moves[$i]);
-
-                }
+                    unset($pMatches);
+                    }
                $moves[$i]=mb_ereg_replace("\s*$","",$moves[$i]);
-                $prevMove=substr($moves[$i],2,2);
+               $prevMove=substr($moves[$i],2,2);
 
                 mb_ereg('x',$moves[$i],$pMatches);
-                if(isset($xMatches[0])){
+                if(isset($pMatches[0])){
                     $moves[$i]="x";
                     unset($pMatches);
                 }
                 $moves[$i].=("=".trim($nMatches[0]));
+                unset($nMatches);
             }
             if (isset($matches[0])) {$moves[$i].=":"; $moves[$i].=$matches[0];}
+            unset($matches);
 
         }
-        $moves[$i]='"'.$moves[$i].'"';
-
     }
-$movestring=implode(",\n", $moves);
-$pattern='\"*\,\n';
-$replace='';
-mb_ereg_replace($pattern,$replace,$movestring);
-mb_ereg_replace("\",\r\n\"\*","\*",$movestring);
+//$input = trim( preg_replace( '/\s+/', ' ', $input ) );
+$movestring=implode("\n", $moves);
+$pattern="(^\s+)|(\s+$)"; $replace=""; //trim mb string
+$movestring=mb_ereg_replace($pattern,$replace,$movestring);
+
+
+//remove blank lines
+$pattern='\n+';
+$replace="\n";
+$movestring=mb_ereg_replace($pattern,$replace,$movestring);
+
+//merge comment line
+$pattern='\n\*'; $replace="*";
+$movestring=mb_ereg_replace($pattern,$replace,$movestring);
+
+//surround with quote marks and add , delimiter
+$moves=explode("\n",$movestring);
+$movestring="\"".implode("\",\n\"",$moves);
 var_dump($movestring);
