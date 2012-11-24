@@ -35,7 +35,7 @@ $version="KIF";
 $hc="手合割：";
 
 include_once "inc/findline.php";
-include_once "inc/data.inc.php"; // string variable $src is defined in separate file
+include_once "inc/data2.inc.php"; // string variable $src is defined in separate file
     $moveNumber="^\s*\d*\s";
     $convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
     "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',
@@ -124,8 +124,10 @@ $c=count($moves);$i=0;
                     $moves[$i]=mb_ereg_replace("xx",$prevMove,$moves[$i]);
                     unset($pMatches);
                     }
-               $moves[$i]=mb_ereg_replace("\s*$","",$moves[$i]);
-               $prevMove=substr($moves[$i],2,2);
+               //$moves[$i]=mb_ereg_replace("\s+$","",$moves[$i]);
+               // $moves[$i]=mb_ereg_replace("\s+J","J",$moves[$i]);
+
+                $prevMove=substr($moves[$i],2,2);
 
                 mb_ereg('x',$moves[$i],$pMatches);
                 if(isset($pMatches[0])){
@@ -137,6 +139,7 @@ $c=count($moves);$i=0;
             }
             if (isset($matches[0])) {$moves[$i].=":"; $moves[$i].=$matches[0];}
             unset($matches);
+            $moves[$i]=mb_ereg_replace("\s+","",$moves[$i]);
 
         }
     }
@@ -151,7 +154,7 @@ $pattern='\n+';
 $replace="\n";
 $movestring=mb_ereg_replace($pattern,$replace,$movestring);
 
-//merge comment line
+//merge comment line, but will leave initial comment as is.
 $pattern='\n\*'; $replace="*";
 $movestring=mb_ereg_replace($pattern,$replace,$movestring);
 
