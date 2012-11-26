@@ -25,22 +25,23 @@
  */
 mb_internal_encoding("UTF-8");
 mb_regex_encoding( "UTF-8" );
-$src="";
+//$src="";
+include_once "inc/findline.php";
+include_once "inc/data2.inc.php"; // string variable $src is defined in separate file
+
 $delim="手数----指手---------消費時間--";
 $player1="先手：";
 $player2="後手：";
 $startDate="開始日時：";
 $finishDate="終了日時：";
-$version="KIF";
+$version="#KIF";
 $hc="手合割：";
-
-include_once "inc/findline.php";
-include_once "inc/data2.inc.php"; // string variable $src is defined in separate file
-    $moveNumber="^\s*\d*\s";
-    $convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
+$brCatcher="C------";
+$moveNumber="^\s*\d*\s";
+$convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
     "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',
     'n'=>'桂','S'=>'成銀','s'=>'銀','r'=>'飛',"R"=>"[竜龍]","b"=>"角","B"=>"馬","k"=>"玉","g"=>"金",
-    "xx"=>"同　","d"=>"打","J"=>"\+","+"=>"成","x"=>"投了","C"=>"変化：",
+    "xx"=>"同　","d"=>"打","J"=>"\+","+"=>"成","x"=>"投了","$brCatcher"=>"変化：",
     "-"=>"$moveNumber",
     ""=>"\(\s[\d/:]*\)"
 );
@@ -54,35 +55,35 @@ $sniffer="[１２３４５６７８９同].*[歩と香桂銀金王玉飛竜龍�
  * comes before "+" key and "成香" $value comes before "香" $value etc.,
  * */
 
-$srcarray=array();
-$srcarray=explode($delim,$src);
+$srcArray=array();
+$srcArray=explode($delim,$src);
 /*$srcarray[0] contains header info.  $srcarray[1] contains kifu info */
 function getHeaderInfo($key,$src){
     $i=findline($key,$src);
-    if ($i)
+    if (isset($i))
     { $split=mb_split($key,$src[$i]);
     return $split[1];}
     else return false;
 }
-$headerarray=explode("\r\n",$srcarray[0]);
+$headerArray=explode("\r\n",$srcArray[0]);
 //split up by lines
-$kifHeader['player1']=getHeaderInfo($player1,$headerarray);
-$kifHeader['player2']=getHeaderInfo($player2,$headerarray);
-$kifHeader['Kif format']=getHeaderInfo($version,$headerarray);
-$kifHeader['Start Date']=getHeaderInfo($startDate,$headerarray);
-$kifHeader['Finish Date']=getHeaderInfo($finishDate,$headerarray);
-$kifHeader['Handycap']=getHeaderInfo($hc,$headerarray);
+$kifHeader['player1']=trim(getHeaderInfo($player1,$headerArray));
+$kifHeader['player2']=trim(getHeaderInfo($player2,$headerArray));
+$kifHeader['KIF info']=trim(getHeaderInfo($version,$headerArray));
+$kifHeader['Start Date']=getHeaderInfo($startDate,$headerArray);
+$kifHeader['Finish Date']=getHeaderInfo($finishDate,$headerArray);
+$kifHeader['Handycap']=trim(getHeaderInfo($hc,$headerArray));
 
 
 
-$moves=explode("\r\n",$srcarray[1]);
-// var_dump($moves);
+$moves=explode("\r\n",$srcArray[1]);
+
 
 $c=count($moves);$i=0;
     for (++$i; $i<$c; $i++) {
 
         $pos=strpos($moves[$i],'*');
-        if ($pos===false) {    //The line is not a comment
+        if ($pos===false) {    //The line is not a comment. its either move or branch label
             $matches =array();
             $nMatches=array();
             $pMatches=array();
@@ -112,14 +113,14 @@ $c=count($moves);$i=0;
                    $moves[$i]=mb_ereg_replace("\-","d",$moves[$i]);
                     unset($pMatches);
                 }
-                mb_ereg('\(\d\d\)\s*',$moves[$i],$pMatches);// detect (nn)=previous position info
+                mb_ereg('\(\d{2}\)\s*',$moves[$i],$pMatches);// detect (nn)=previous position info
                 if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace(".\(","",$moves[$i]);
                     $moves[$i]=mb_ereg_replace("\)\s*","",$moves[$i]);
                     unset($pMatches);
 
                 }
-                mb_ereg('xx',$moves[$i],$pMatches);
+                mb_ereg('xx',$moves[$i],$pMatches); //handle 同駒　move
                 if (isset($pMatches[0])){
                     $moves[$i]=mb_ereg_replace("xx",$prevMove,$moves[$i]);
                     unset($pMatches);
@@ -127,7 +128,7 @@ $c=count($moves);$i=0;
                //$moves[$i]=mb_ereg_replace("\s+$","",$moves[$i]);
                // $moves[$i]=mb_ereg_replace("\s+J","J",$moves[$i]);
 
-                $prevMove=substr($moves[$i],2,2);
+                $prevMove=substr($moves[$i],2,2); // remember 同駒　coordinate for next move.
 
                 mb_ereg('x',$moves[$i],$pMatches);
                 if(isset($pMatches[0])){
@@ -137,8 +138,24 @@ $c=count($moves);$i=0;
                 $moves[$i].=("=".trim($nMatches[0]));
                 unset($nMatches);
             }
-            if (isset($matches[0])) {$moves[$i].=":"; $moves[$i].=$matches[0];}
-            unset($matches);
+            if (isset($matches[0])) {$moves[$i].=":"; $moves[$i].=$matches[0];unset($matches);}
+            else if (strpos($moves[$i],$brCatcher)!==false) {// in case of Jump, "同駒" movement handler
+               $mvnm=array();
+               mb_ereg("\d+",$moves[$i],$mvnm);// echo "tesu to catch is =".$mvnm[0]."\n";
+               $flag=false;
+               $mvnm[0]="=".$mvnm[0];// find =n+ format, which indicates tesuu
+
+                for ($j=$i-1; ($j>0) & (!$flag);$j--){
+                    $flag=mb_ereg($mvnm[0],$moves[$j]);
+                }
+               // echo "target move is :$moves[$j]";
+                $prevMove=substr($moves[$j],2,2); //   echo "Prev move is".$prevMove."\n";
+               $moves[$i]=substr_replace($moves[$i],$prevMove,2,2);
+
+            }
+
+
+
             $moves[$i]=mb_ereg_replace("\s+","",$moves[$i]);
 
         }
@@ -154,11 +171,12 @@ $pattern='\n+';
 $replace="\n";
 $movestring=mb_ereg_replace($pattern,$replace,$movestring);
 
-//merge comment line, but will leave initial comment as is.
+//merge comment line, but will leave initial (move 0) comment as is.
 $pattern='\n\*'; $replace="*";
 $movestring=mb_ereg_replace($pattern,$replace,$movestring);
 
-//surround with quote marks and add , delimiter
+//surround with quote marks and add ',' delimiter
 $moves=explode("\n",$movestring);
 $movestring="\"".implode("\",\n\"",$moves);
+var_dump($kifHeader);
 var_dump($movestring);
