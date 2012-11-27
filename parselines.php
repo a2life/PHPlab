@@ -17,7 +17,7 @@
  * concat $sashite with "=" prepended.  for example "16 g+2837"-> "g+2837=16:３七銀成, preserve tesuu as well.
  * step 5. tack comment line into previous move line: "g+2837=16:３七銀成"->"g+2837=16:３七銀成*comment added"
  * as a result, each move line should look like this
- * in case of branch, then = will be replaced by J.  for insance "g+2837J16:３七銀成*comment added"
+ * in case of branch, then = will be replaced by J.  for instance "g+2837J16:３七銀成*comment added"
  *current 11/2012 drawboard wil only parse g+2837 and *comment potion
   * This snippet
  * 1. find comment line and divert to different handling
@@ -41,7 +41,7 @@ $moveNumber="^\s*\d*\s";
 $convert=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
     "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',
     'n'=>'桂','S'=>'成銀','s'=>'銀','r'=>'飛',"R"=>"[竜龍]","b"=>"角","B"=>"馬","k"=>"玉","g"=>"金",
-    "xx"=>"同　","d"=>"打","J"=>"\+","+"=>"成","x"=>"投了","$brCatcher"=>"変化：",
+    "xx"=>"同　","d"=>"打","J"=>"\+","+"=>"成","x"=>"(投了|中断)","$brCatcher"=>"変化：",
     "-"=>"$moveNumber",
     ""=>"\(\s[\d/:]*\)"
 );
@@ -110,13 +110,13 @@ $c=count($moves);$i=0;
                 if (isset($pMatches[0])){
 
                    $moves[$i]=mb_ereg_replace("d","",$moves[$i]);
-                   $moves[$i]=mb_ereg_replace("\-","d",$moves[$i]);
+                   $moves[$i]=mb_ereg_replace("-","d",$moves[$i]);
                     unset($pMatches);
                 }
                 mb_ereg('\(\d{2}\)\s*',$moves[$i],$pMatches);// detect (nn)=previous position info
                 if (isset($pMatches[0])){
-                    $moves[$i]=mb_ereg_replace(".\(","",$moves[$i]);
-                    $moves[$i]=mb_ereg_replace("\)\s*","",$moves[$i]);
+                    $moves[$i]=mb_ereg_replace(".\(","",$moves[$i]);// removes piece info (p,l etc.,) and opening paren.
+                    $moves[$i]=mb_ereg_replace("\)\s*","",$moves[$i]);//remove closing paren and traiilng space.
                     unset($pMatches);
 
                 }
@@ -129,12 +129,6 @@ $c=count($moves);$i=0;
                // $moves[$i]=mb_ereg_replace("\s+J","J",$moves[$i]);
 
                 $prevMove=substr($moves[$i],2,2); // remember 同駒　coordinate for next move.
-
-                mb_ereg('x',$moves[$i],$pMatches);
-                if(isset($pMatches[0])){
-                    $moves[$i]="x";
-                    unset($pMatches);
-                }
                 $moves[$i].=("=".trim($nMatches[0]));
                 unset($nMatches);
             }
@@ -151,6 +145,13 @@ $c=count($moves);$i=0;
                // echo "target move is :$moves[$j]";
                 $prevMove=substr($moves[$j],2,2); //   echo "Prev move is".$prevMove."\n";
                $moves[$i]=substr_replace($moves[$i],$prevMove,2,2);
+
+            }
+            else { //a line that includes "投了" or "中断" will be reduced to a single character of "x"
+                mb_ereg("x",$moves[$i],$pMatches);
+                if (isset($pMatches[0])){
+                    $moves[$i]="x";
+                }
 
             }
 
