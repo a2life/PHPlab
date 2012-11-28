@@ -7,8 +7,8 @@
  * routine to parse the onhand piece information
  */
 mb_regex_encoding("UTF-8");
-$onHand="角二　歩五 銀　";//sample string, note this will only work the number up to 9
-$patterns=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]","7"=>"[七７]","8"=>"[八８]","9"=>"[九９]",
+$onHand="角二　歩＋二 銀　";//sample string, note this will only work the number up to 9
+$patterns=array("10"=>"＋\s","1"=>"[１一＋]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]","7"=>"[七７]","8"=>"[八８]","9"=>"[九９]",
     "p"=>"歩","l"=>"香",'n'=>'桂','s'=>'銀','r'=>'飛',"b"=>"角","g"=>"金");
 
     foreach ($patterns as $replace=>$pattern){
@@ -18,7 +18,7 @@ var_dump($onHand);
 //testing string repeat function
 $regs=array();
 $hands="";
-$pattern="([plnsgrb])(\d?)";
+$pattern="([plnsgrb])(\d*)";
 mb_ereg_search_init($onHand,$pattern);
     while (mb_ereg_search()){
         $regs=mb_ereg_search_getregs();
