@@ -8,8 +8,8 @@
  * This file will find kifu position data and parse
  */
 $init_data=""; $init_array=array();
-include_once "initdata.inc.php";
-include_once "findline.php";
+include_once "inc/initdata.inc.php";
+include_once "inc/findline.php";
 
 $init_array=explode("\r\n",$init_data);
 $c=count($init_array);
@@ -20,7 +20,7 @@ $j=$i+9; echo $j."\n\n";
  for ($n=$i;$n<$j;$n++){
     $m= mb_strlen($init_array[$n]);
      for($k=0;$k<$m;$k++){
-         echo "($k):".mb_substr($init_array[$n],$k,1)."|";
+         echo "($k):".mb_substr($init_array[$n],$k,1).":";
      }
      echo "\n";
  }
