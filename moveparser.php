@@ -19,24 +19,31 @@ $xlationArray=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四�
     );
 
 $match=array();
-$pattern="(\d+)\s+([\w\s]+)(?:\((\d+)\))?[ /():0-9]*(\+?)";
+//$pattern="(?:(\d+)\s+([\w\s]+)(?:\((\d+)\))?[ /():0-9]*(\+?))";
+$header="手数----指手";
+$pattern="(?:(\d+)\s+([\w\s]+)(?:\((\d+)\))?[ /():0-9]*(\+?))|(?:\n(\*)([\w\s]+))";
 $parsed="";$parsedlines="";
-mb_ereg_search_init($src,$pattern);
-while (mb_ereg_search()){
+mb_ereg_search_init($src,$header);
+mb_ereg_search();
+while (mb_ereg_search($pattern)){
 $match=mb_ereg_search_getregs();
-$parsed=(($match[1] & 1)?"s-":"g-");
-$parsed.=(trim($match[2]).$match[3].$match[4]."=".$match[1]);
-echo $parsed;
+if ($match[2]){
+    $parsed="\n";
+    $parsed.=(($match[1] & 1)?"s-":"g-");
+$parsed.=trim((trim($match[2]).$match[3].$match[4]."=".$match[1]));
+//echo $parsed;
 
 foreach($xlationArray as $key=>$pat){
     $parsed=mb_ereg_replace($pat,$key,$parsed);
 }
-$parsed.=(":".$match[2]."\n");
+$parsed.=(":".$match[2]);
+} else $parsed="*".$match[6];
+
     $parsedlines.=$parsed;
 }
 $parsedlines=mb_ereg_replace("J=","J",$parsedlines); // replace = with J for jump point
 $parsedlines=mb_ereg_replace("(?<=\d\d)[pPlLnNsSgkrRbB](?=.?\d\d)","",$parsedlines); //remove piece info (not needed for drawboard)
 $parsedlines=mb_ereg_replace("-(..)\+","+\\1",$parsedlines); // s-nn+ => s+nn
 $parsedlines=mb_ereg_replace("-(...)d","d\\1",$parsedlines); // s-68sd => sd68s etc.,
-//$parsedlines=mb_ereg_replace("(")
+
 var_dump($parsedlines);
