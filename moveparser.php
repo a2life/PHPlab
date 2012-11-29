@@ -11,16 +11,32 @@
  */
 mb_regex_encoding("UTF-8");
 mb_regex_set_options("sr"); //recognize \n from .
+include_once "inc/data.inc.php";
+$xlationArray=array("1"=>"[１一]","2"=>"[二２]","3"=>"[三３]","4"=>"[四４]","5"=>"[五５]","6"=>"[六６]",
+    "7"=>"[七７]","8"=>"[八８]","9"=>"[九９]","p"=>"歩","P"=>"と",'L'=>"成香","l"=>"香",'N'=>'成桂',
+    'n'=>'桂','S'=>'成銀','s'=>'銀','r'=>'飛',"R"=>"[竜龍]","b"=>"角","B"=>"馬","k"=>"玉","g"=>"金",
+    "00"=>"同　","d"=>"打","J"=>"\+","+"=>"成","x"=>"(投了|中断)","C"=>"変化：",
+    );
+
 $match=array();
-$src=<<<EOT
-   1 ７六歩(77)   ( 0:00/00:00:00)
-   2 ８四歩(83)   ( 0:00/00:00:00)
-   3 ６八銀(79)   ( 0:00/00:00:00)
-   4 ３四歩(33)   ( 0:00/00:00:00)
-   5 ６六歩(67)   ( 0:00/00:00:00)
-   6 ６二銀(71)   ( 0:00/00:00:00)
-EOT;
- $pattern="(\d+)\s+(\w+)\((\d+)\)";
+$pattern="(\d+)\s+([\w\s]+)(?:\((\d+)\))?[ /():0-9]*(\+?)";
+$parsed="";$parsedlines="";
 mb_ereg_search_init($src,$pattern);
-$match=mb_ereg_search_regs();
-var_dump($match);
+while (mb_ereg_search()){
+$match=mb_ereg_search_getregs();
+$parsed=(($match[1] & 1)?"s-":"g-");
+$parsed.=(trim($match[2]).$match[3].$match[4]."=".$match[1]);
+echo $parsed;
+
+foreach($xlationArray as $key=>$pat){
+    $parsed=mb_ereg_replace($pat,$key,$parsed);
+}
+$parsed.=(":".$match[2]."\n");
+    $parsedlines.=$parsed;
+}
+$parsedlines=mb_ereg_replace("J=","J",$parsedlines); // replace = with J for jump point
+$parsedlines=mb_ereg_replace("(?<=\d\d)[pPlLnNsSgkrRbB](?=.?\d\d)","",$parsedlines); //remove piece info (not needed for drawboard)
+$parsedlines=mb_ereg_replace("-(..)\+","+\\1",$parsedlines); // s-nn+ => s+nn
+$parsedlines=mb_ereg_replace("-(...)d","d\\1",$parsedlines); // s-68sd => sd68s etc.,
+//$parsedlines=mb_ereg_replace("(")
+var_dump($parsedlines);
